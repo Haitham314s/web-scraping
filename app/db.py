@@ -1,5 +1,6 @@
 from cassandra.cluster import Cluster
 from cassandra.auth import PlainTextAuthProvider
+from cassandra.cqlengine.connection import register_connection, set_default_connection
 import pathlib
 import os
 from dotenv import load_dotenv
@@ -22,7 +23,11 @@ def get_cluster():
 
 def get_session():
     cluster = get_cluster()
-    return cluster.connect()
+    session = cluster.connect()
+
+    register_connection(str(session), session=session)
+    set_default_connection(str(session))
+    return session
 
 
 session = get_session()
