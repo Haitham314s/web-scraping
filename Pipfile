@@ -22,6 +22,7 @@ python-dotenv = "*"
 python-slugify = "*"
 
 [dev-packages]
+jupyter = "*"
 
 [requires]
 python_version = "3.11"

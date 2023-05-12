@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 ASTRA_DB_CLIENT_ID = os.getenv("ASTRA_DB_CLIENT_ID")
-ASTRA_DB_CLIENT_SECRET= os.get_env("ASTRA_DB_CLIENT_SECRET")
+ASTRA_DB_CLIENT_SECRET= os.getenv("ASTRA_DB_CLIENT_SECRET")
 
 BASE_DIR = pathlib.Path(__file__).parent
 CLUSTER_BUNDLE = str(BASE_DIR / "ignored" / "connect.zip")
@@ -29,9 +29,3 @@ def get_session():
     set_default_connection(str(session))
     return session
 
-
-session = get_session()
-if row := session.execute("select release_version from system.local").one():
-    print(row[0])
-else:
-    print("An error occurred.")
