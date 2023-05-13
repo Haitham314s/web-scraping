@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from .config import get_settings
 from .db import get_session
 from .models import Product, ProductScrapeEvent
-from .schema import ProductListSchema
+from .schema import ProductListSchema, ProductScrapeEventDetailSchema
 
 app = FastAPI()
 
@@ -33,11 +33,16 @@ def product_list_view():
 
 
 @app.get("/product/{asin}")
-def product_detail_view(asin: str):
+def products_detail_view(asin: str):
     data = dict(Product.objects.get(asin=asin))
-    events = list(ProductScrapeEvent.objects().filter(asin=asin))
-    events = [ProductListSchema(**x) for x in events]
+    events = list(ProductScrapeEvent.objects().filter(asin=asin).limit(5))
+    events = [ProductScrapeEventDetailSchema(**x) for x in events]
     data["events"] = events
+    data["events_url"] = f"/product/{asin}/events"
 
     return data
 
+
+@app.get("/product/{asin}/events", response_model=List[ProductListSchema])
+def products_scrapes_list_view(asin: str):
+    return list(ProductScrapeEvent.objects().filter(asin=asin).limit(5))
