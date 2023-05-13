@@ -6,6 +6,7 @@ from .config import get_settings
 from .db import get_session
 from .models import Product, ProductScrapeEvent
 from .schema import ProductListSchema, ProductScrapeEventDetailSchema
+from .crud import add_scrape_event
 
 app = FastAPI()
 
@@ -29,10 +30,16 @@ def read_index():
 
 @app.get("/products", response_model=List[ProductListSchema])
 def product_list_view():
-    return {"results": list(Product.objects.all())}
+    return list(Product.objects.all())
 
 
-@app.get("/product/{asin}")
+@app.post("/events/scrape")
+def event_scrape_view(data: ProductListSchema):
+    product, _ = add_scrape_event(data.dict())
+    return product
+
+
+@app.get("/products/{asin}")
 def products_detail_view(asin: str):
     data = dict(Product.objects.get(asin=asin))
     events = list(ProductScrapeEvent.objects().filter(asin=asin).limit(5))
@@ -43,6 +50,6 @@ def products_detail_view(asin: str):
     return data
 
 
-@app.get("/product/{asin}/events", response_model=List[ProductListSchema])
+@app.get("/products/{asin}/events", response_model=List[ProductListSchema])
 def products_scrapes_list_view(asin: str):
-    return list(ProductScrapeEvent.objects().filter(asin=asin).limit(5))
+    return list(ProductScrapeEvent.objects().filter(asin=asin))
