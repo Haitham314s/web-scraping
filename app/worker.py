@@ -1,8 +1,13 @@
+from cassandra.cqlengine.connection import (
+    register_connection,
+    set_default_connection,
+    cluster as connection_cluster,
+    session as connection_session
+)
+from cassandra.cqlengine.management import sync_table
 from celery import Celery
 from celery.schedules import crontab
 from celery.signals import beat_init, worker_process_init
-from cassandra.cqlengine.connection import register_connection, set_default_connection, cluster as connection_cluster, session as connection_session
-from cassandra.cqlengine.management import sync_table
 
 from .config import get_settings
 from .db import get_cluster

@@ -20,6 +20,7 @@ requests-html = "*"
 selenium = "*"
 python-dotenv = "*"
 python-slugify = "*"
+fake-useragent = "*"
 
 [dev-packages]
 jupyter = "*"
