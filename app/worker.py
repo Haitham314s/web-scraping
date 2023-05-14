@@ -1,4 +1,5 @@
 from celery import Celery
+from celery.schedules import crontab
 from celery.signals import beat_init, worker_process_init
 from cassandra.cqlengine.connection import register_connection, set_default_connection, cluster as connection_cluster, session as connection_session
 from cassandra.cqlengine.management import sync_table
@@ -34,6 +35,21 @@ beat_init.connect(celery_on_startup)
 worker_process_init.connect(celery_on_startup)
 
 
+@celery_app.on_after_configure.connect
+def setup_periodic_task(sender, *args, **kwargs):
+    # sender.add_periodic_task(1, random_task.s("Hello"), expires=10)
+    #
+    # sender.add_periodic_task(
+    #     crontab(hour=8, minute=0, day_of_week=2),
+    #     random_task.s("Hello"), expires=10
+    # )
+
+    sender.add_periodic_task(
+        crontab(minutes="*/5"),
+        scrape_products.s()
+    )
+
+
 @celery_app.task
 def random_task(name):
     print(f"Who throws a shoe? Like honestly {name}")
@@ -42,3 +58,17 @@ def random_task(name):
 @celery_app.task
 def list_products():
     print(list(Product.objects().all().values_list("asin", flat=True)))
+
+
+@celery_app.task
+def scrape_asin(asin):
+    print(f"Asin: {asin}")
+
+
+@celery_app.task
+def scrape_products():
+    print("Scraping in progress...")
+
+    q = list(Product.objects().all().values_list("asin", flat=True))
+    for asin in q:
+        scrape_asin.applly_async(asin)
