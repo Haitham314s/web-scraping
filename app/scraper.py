@@ -26,12 +26,20 @@ def get_user_agent():
 
 @dataclass
 class Scraper:
-    url: str
+    url: str = None
+    asin: str = None
     endless_scroll: bool = False
     endless_scroll_time: int = 5
     html_obj: HTML = None
 
     driver: WebDriver = None
+
+    def __post_init__(self):
+        if self.asin:
+            self.url = f"https://amazon.ae/dp/{self.asin}"
+        if not self.asin or not self.url:
+            raise Exception("ASIN or url is required.")
+
 
     def get_driver(self):
         if self.driver is None:

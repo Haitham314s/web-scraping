@@ -10,8 +10,11 @@ from celery.schedules import crontab
 from celery.signals import beat_init, worker_process_init
 
 from .config import get_settings
+from .crud import add_scrape_event
 from .db import get_cluster
 from .models import Product, ProductScrapeEvent
+from .schema import ProductListSchema
+from .scraper import Scraper
 
 settings = get_settings()
 celery_app = Celery(__name__)
@@ -40,6 +43,9 @@ beat_init.connect(celery_on_startup)
 worker_process_init.connect(celery_on_startup)
 
 
+# celery --app app.worker.celery_app worker --beat -s celerybeat-schedule --loglevel INFO
+
+
 @celery_app.on_after_configure.connect
 def setup_periodic_task(sender, *args, **kwargs):
     # sender.add_periodic_task(1, random_task.s("Hello"), expires=10)
@@ -66,8 +72,19 @@ def list_products():
 
 
 @celery_app.task
-def scrape_asin(asin):
-    print(f"Asin: {asin}")
+def scrape_asin(asin) -> tuple:
+    s = Scraper(asin=asin, endless_scroll=True)
+    dataset = s.scrape()
+    try:
+        validated_data = ProductListSchema(**dataset)
+    except:
+        validated_data = None
+
+    if validated_data is not None:
+        product, _ = add_scrape_event(validated_data.dict())
+        return asin, True
+
+    return asin, False
 
 
 @celery_app.task
