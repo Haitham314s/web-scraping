@@ -1,12 +1,14 @@
 from typing import List
+
 from cassandra.cqlengine.management import sync_table
-from fastapi import FastAPI
+from cassandra.cqlengine.models import _DoesNotExist
+from fastapi import FastAPI, HTTPException, status
 
 from .config import get_settings
+from .crud import add_scrape_event
 from .db import get_session
 from .models import Product, ProductScrapeEvent
 from .schema import ProductListSchema, ProductScrapeEventDetailSchema
-from .crud import add_scrape_event
 
 app = FastAPI()
 
@@ -35,19 +37,26 @@ def product_list_view():
 
 @app.post("/events/scrape")
 def event_scrape_view(data: ProductListSchema):
-    product, _ = add_scrape_event(data.dict())
+    product, _ = add_scrape_event(data.model_dump())
     return product
 
 
 @app.get("/products/{asin}")
 def products_detail_view(asin: str):
-    data = dict(Product.objects.get(asin=asin))
-    events = list(ProductScrapeEvent.objects().filter(asin=asin).limit(5))
-    events = [ProductScrapeEventDetailSchema(**x) for x in events]
-    data["events"] = events
-    data["events_url"] = f"/product/{asin}/events"
+    try:
+        data = dict(Product.objects.get(asin=asin))
+        events = list(ProductScrapeEvent.objects().filter(asin=asin).limit(5))
+        events = [ProductScrapeEventDetailSchema(**event) for event in events]
 
-    return data
+        data["events"] = events
+        data["events_url"] = f"/product/{asin}/events"
+
+        return data
+    except _DoesNotExist as e:
+        print(f"Error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Product {asin} not found"
+        )
 
 
 @app.get("/products/{asin}/events", response_model=List[ProductListSchema])

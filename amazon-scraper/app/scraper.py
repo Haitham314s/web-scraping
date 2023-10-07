@@ -21,7 +21,7 @@ def extract_price_from_string(value: str, regex=r"[\$]{1}[\d]+\.?\d{0,2}"):
 
 
 def get_user_agent():
-    return UserAgent(verify_ssl=False).random
+    return UserAgent().random
 
 
 @dataclass
@@ -35,11 +35,10 @@ class Scraper:
     driver: WebDriver = None
 
     def __post_init__(self):
-        if self.asin:
+        if self.asin is not None:
             self.url = f"https://amazon.ae/dp/{self.asin}"
-        if not self.asin or not self.url:
+        if self.asin is None and self.url is None:
             raise Exception("ASIN or url is required.")
-
 
     def get_driver(self):
         if self.driver is None:
@@ -78,7 +77,6 @@ class Scraper:
     def extract_tables(self):
         html_obj = self.get_html_obj()
         return html_obj.find("table")
-
 
     def extract_table_dataset(self, tables):
         dataset = {}
@@ -143,8 +141,4 @@ class Scraper:
         tables = self.extract_tables()
         dataset = self.extract_table_dataset(tables)
 
-        return {
-            "price_str": price_str,
-            "title_str": title_str,
-            **dataset
-        }
+        return {"price_str": price_str, "title_str": title_str, **dataset}

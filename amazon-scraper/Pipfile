@@ -21,9 +21,10 @@ selenium = "*"
 python-dotenv = "*"
 python-slugify = "*"
 fake-useragent = "*"
+pydantic-settings = "*"
 
 [dev-packages]
 jupyter = "*"
 
 [requires]
-python_version = "3.11"
+python_version = "3.11.6"

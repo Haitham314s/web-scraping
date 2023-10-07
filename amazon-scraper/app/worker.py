@@ -1,9 +1,9 @@
-from cassandra.cqlengine.connection import (
-    register_connection,
-    set_default_connection,
-    cluster as connection_cluster,
-    session as connection_session
-)
+import logging
+
+from cassandra.cqlengine.connection import cluster as connection_cluster
+from cassandra.cqlengine.connection import register_connection
+from cassandra.cqlengine.connection import session as connection_session
+from cassandra.cqlengine.connection import set_default_connection
 from cassandra.cqlengine.management import sync_table
 from celery import Celery
 from celery.schedules import crontab
@@ -44,6 +44,7 @@ worker_process_init.connect(celery_on_startup)
 
 
 # celery --app app.worker.celery_app worker --beat -s celerybeat-schedule --loglevel INFO
+# celery --app app.worker.celery_app worker --beat -s celerybeat-schedule --loglevel INFO
 
 
 @celery_app.on_after_configure.connect
@@ -55,10 +56,7 @@ def setup_periodic_task(sender, *args, **kwargs):
     #     random_task.s("Hello"), expires=10
     # )
 
-    sender.add_periodic_task(
-        crontab(minutes="*/5"),
-        scrape_products.s()
-    )
+    sender.add_periodic_task(crontab(minutes="*/5"), scrape_products.s())
 
 
 @celery_app.task
@@ -81,7 +79,8 @@ def scrape_asin(asin) -> tuple:
         validated_data = None
 
     if validated_data is not None:
-        product, _ = add_scrape_event(validated_data.dict())
+        product, _ = add_scrape_event(validated_data.model_dump())
+        logging.info(f"PRODUCT_SCRAPED: {product}")
         return asin, True
 
     return asin, False
@@ -93,4 +92,4 @@ def scrape_products():
 
     q = list(Product.objects().all().values_list("asin", flat=True))
     for asin in q:
-        scrape_asin.applly_async(asin)
+        scrape_asin.apply_async(asin)
